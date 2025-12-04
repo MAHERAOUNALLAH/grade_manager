@@ -9,7 +9,9 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  # ---------- CI : Vérification et tests ----------
+  ci:
+    name: Continuous Integration
     runs-on: ubuntu-latest
 
     steps:
@@ -17,30 +19,58 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Installer PHP (si besoin pour Composer)
+      # 2️⃣ Installer PHP
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2' # ou la version que tu utilises
+          php-version: '8.2'
 
-      # 3️⃣ Installer Composer (si tu utilises Composer)
+      # 3️⃣ Installer Composer (si utilisé)
       #- name: Install Composer dependencies
-       # run: composer install --no-progress --prefer-dist
-        #working-directory: ./ # mettre le dossier où se trouve ton composer.json
+      #  run: composer install --no-progress --prefer-dist
 
-      # 4️⃣ Se connecter à Docker Hub avec les secrets
+      # 4️⃣ Vérifier la syntaxe PHP (lint)
+      - name: Check PHP syntax
+        run: find . -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      # 5️⃣ Exécuter les tests
+      - name: Run tests
+        run: |
+          if [ -d "tests" ]; then
+            ./vendor/bin/phpunit --testdox
+          else
+            echo "Aucun test trouvé"
+          fi
+
+  # ---------- CD : Build et déploiement Docker ----------
+  cd:
+    name: Continuous Deployment
+    runs-on: ubuntu-latest
+    needs: ci  # n'exécute CD que si CI passe
+
+    steps:
+      # 1️⃣ Récupérer le code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Installer PHP (pour build Docker)
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      # 3️⃣ Se connecter à Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 5️⃣ Build de l'image Docker
+      # 4️⃣ Build de l'image Docker
       - name: Build Docker image
-        run: |
-          docker build -t maherrr/grade_manager:latest .
+        run: docker build -t maherrr/grade_manager:latest .
 
-      # 6️⃣ Push de l'image sur Docker Hub
+      # 5️⃣ Push de l'image sur Docker Hub
       - name: Push Docker image
-        run: |
-          docker push maherrr/grade_manager:latest
+        run: docker push maherrr/grade_manager:latest
+
