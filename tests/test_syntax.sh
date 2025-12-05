@@ -1,13 +1,34 @@
 #!/bin/bash
 
-echo "Checking PHP syntax..."
+echo "🔍 Vérification de la syntaxe PHP..."
 
-for file in $(find . -name "*.php"); do
-    php -l "$file"
-    if [ $? != 0 ]; then
-        echo "❌ Syntax error in $file"
-        exit 1
+# Cherche tous les fichiers .php du projet
+php_files=$(find . -type f -name "*.php")
+
+# Si aucun fichier PHP n'est trouvé
+if [ -z "$php_files" ]; then
+    echo "⚠️ Aucun fichier PHP trouvé dans le projet."
+    exit 0
+fi
+
+# Vérifier la syntaxe de chaque fichier
+error_found=0
+
+for file in $php_files; do
+    php -l "$file" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "❌ Erreur de syntaxe dans : $file"
+        error_found=1
+    else
+        echo "✔️ OK : $file"
     fi
 done
 
-echo "✔️ All PHP files have valid syntax."
+# Retourne une erreur si un fichier est incorrect
+if [ $error_found -ne 0 ]; then
+    echo "❌ Des erreurs de syntaxe ont été trouvées."
+    exit 1
+else
+    echo "✅ Aucune erreur de syntaxe détectée."
+    exit 0
+fi
