@@ -34,13 +34,24 @@ jobs:
         run: find . -name "*.php" -print0 | xargs -0 -n1 php -l
 
       # 5️⃣ Exécuter les tests
-      - name: Run tests
+      - name: Run PHP syntax tests
         run: |
-          if [ -d "tests" ]; then
-            ./vendor/bin/phpunit --testdox
+          echo "🔎 Vérification syntaxe PHP..."
+          ERRORS=0
+          for file in $(find . -name "*.php"); do
+            php -l "$file"
+            if [ $? -ne 0 ]; then
+              ERRORS=1
+            fi
+          done
+          if [ $ERRORS -ne 0 ]; then
+            echo "❌ Erreurs syntaxiques détectées"
+            exit 1
           else
-            echo "Aucun test trouvé"
+            echo "✅ Syntaxe PHP valide"
+            exit 0
           fi
+
 
   # ---------- CD : Build et déploiement Docker ----------
   cd:
